@@ -2,3 +2,5 @@
 # 업데이트 시 `python -m pip install --upgrade` + `pip-audit` 권장
 streamlit==1.57.0
 pdfplumber==0.11.9
+supabase==2.10.0
+python-dotenv==1.0.1

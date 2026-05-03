@@ -23,6 +23,11 @@ Thumbs.db
 # Streamlit
 .streamlit/secrets.toml
 
+# 환경 변수 / 시크릿 (절대 커밋 금지)
+.env
+.env.*
+!.env.example
+
 # OMC 작업 상태 (커밋 대상 아님)
 .omc/
 

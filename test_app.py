@@ -5,9 +5,9 @@
 
 from __future__ import annotations
 
-import unittest
-
 import io
+import os
+import unittest
 
 from pdf_parser import (
     FinancialData,
@@ -287,6 +287,77 @@ class TestFormatAmountNegative(unittest.TestCase):
 
     def test_negative_won(self):
         self.assertEqual(format_amount(-1234, "원"), "-1,234원")
+
+
+class TestSupabaseClientEnvValidation(unittest.TestCase):
+    """supabase_client._required_env 가 환경변수 누락을 명확히 보고하는지."""
+
+    def test_missing_env_raises_runtime_error(self):
+        from supabase_client import _required_env
+
+        original = os.environ.pop("__OMC_TEST_NO_SUCH_VAR__", None)
+        try:
+            with self.assertRaises(RuntimeError) as ctx:
+                _required_env("__OMC_TEST_NO_SUCH_VAR__")
+            self.assertIn(".env", str(ctx.exception))
+        finally:
+            if original is not None:
+                os.environ["__OMC_TEST_NO_SUCH_VAR__"] = original
+
+    def test_present_env_returns_value(self):
+        from supabase_client import _required_env
+
+        os.environ["__OMC_TEST_PRESENT_VAR__"] = "hello"
+        try:
+            self.assertEqual(_required_env("__OMC_TEST_PRESENT_VAR__"), "hello")
+        finally:
+            del os.environ["__OMC_TEST_PRESENT_VAR__"]
+
+
+class TestDbHelpers(unittest.TestCase):
+    """db 모듈의 화이트리스트와 인증 가드 검증."""
+
+    def test_client_field_whitelist_complete(self):
+        from db import CLIENT_FIELDS
+
+        for required in (
+            "name",
+            "industry",
+            "default_unit",
+            "default_revenue",
+            "default_total_liabilities",
+            "default_total_equity",
+            "default_operating_income",
+            "default_interest_expense",
+            "default_short_term_debt",
+            "default_long_term_debt",
+        ):
+            self.assertIn(required, CLIENT_FIELDS)
+
+    def test_history_field_whitelist_complete(self):
+        from db import HISTORY_FIELDS
+
+        for required in (
+            "result_type",
+            "generated_text",
+            "industry_snapshot",
+            "unit_snapshot",
+            "revenue_snapshot",
+            "debt_ratio_snapshot",
+            "interest_coverage_snapshot",
+            "total_debt_snapshot",
+            "is_operating_loss_snapshot",
+        ):
+            self.assertIn(required, HISTORY_FIELDS)
+
+    def test_user_id_raises_when_not_logged_in(self):
+        import streamlit as st
+        from db import _user_id
+
+        st.session_state.pop("user", None)
+        with self.assertRaises(RuntimeError) as ctx:
+            _user_id()
+        self.assertIn("로그인", str(ctx.exception))
 
 
 class TestSanitizeFilename(unittest.TestCase):
